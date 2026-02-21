@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: insightloop
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: insightloop_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      - DATABASE_URL=postgresql://insightloop:dev_password@db:5432/insightloop_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
