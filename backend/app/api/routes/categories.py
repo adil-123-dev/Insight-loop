@@ -63,9 +63,8 @@ def create_category(
     - Type: "Mid-term Feedback", "Final Evaluation"
     
     **Returns:** Created category with ID and timestamps
-    """
-    # Verify admin belongs to the organization
-    if current_user.organization_id != category_data.organization_id:
+    """    # Verify admin belongs to the organization
+    if current_user.org_id != category_data.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only create categories for your organization"
@@ -122,13 +121,12 @@ def list_categories(
     - Display category filter dropdown in form list
     - Show category statistics
     - Organize forms by department/semester
-    """
-    # If no organization_id specified, use current user's organization
+    """    # If no organization_id specified, use current user's organization
     if organization_id is None:
-        organization_id = current_user.organization_id
+        organization_id = current_user.org_id
     else:
         # If organization_id is specified, verify user has access
-        if current_user.role != "admin" and current_user.organization_id != organization_id:
+        if current_user.role != "admin" and current_user.org_id != organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only view categories from your organization"
@@ -192,9 +190,8 @@ def delete_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Category {category_id} not found"
         )
-    
-    # Verify admin belongs to the same organization
-    if current_user.organization_id != category.organization_id:
+      # Verify admin belongs to the same organization
+    if current_user.org_id != category.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete categories from your organization"

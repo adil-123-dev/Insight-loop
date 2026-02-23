@@ -295,12 +295,12 @@ def export_analytics_report(
         date_range = "N/A"
         if summary.first_response_date and summary.last_response_date:
             date_range = f"{summary.first_response_date.strftime('%Y-%m-%d')} to {summary.last_response_date.strftime('%Y-%m-%d')}"
-        
+
         metadata = ReportMetadata(
             form_id=form_id,
             form_title=form.title,
             generated_at=datetime.now(),
-            generated_by=current_user.full_name,
+            generated_by=current_user.email,
             total_responses=summary.total_responses,
             date_range=date_range
         )

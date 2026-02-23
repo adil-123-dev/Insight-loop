@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Button, Chip, CircularProgress, Alert,
@@ -325,7 +325,6 @@ export default function FeedbackPage() {
   const { formId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const [form, setForm] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -335,7 +334,9 @@ export default function FeedbackPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [fatalError, setFatalError] = useState(''); // blocking errors: closed, already submitted
   const [validationError, setValidationError] = useState('');
+  const errorRef = useRef(null);
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -378,15 +379,16 @@ export default function FeedbackPage() {
     setValidationError('');
     if (!isFirst) setCurrentIndex(i => i - 1);
   };
-
   const handleSubmit = async () => {
     // Validate all required questions
     const unanswered = questions.filter(q => q.is_required && !answers[q.id]);
     if (unanswered.length > 0) {
       setValidationError(`Please answer all required questions. ${unanswered.length} required question(s) remaining.`);
       return;
-    }    setSubmitting(true);
+    }
+    setSubmitting(true);
     setError('');
+    setFatalError('');
     try {
       // Build answers payload: { question_id, answer_value }
       const answersPayload = questions.map(q => ({
@@ -400,7 +402,20 @@ export default function FeedbackPage() {
       });
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit feedback. Please try again.');
+      const detail = err.response?.data?.detail || 'Failed to submit feedback. Please try again.';
+      // Detect fatal/blocking errors — show them prominently and disable re-submit
+      const isFatal =
+        detail.toLowerCase().includes('closed') ||
+        detail.toLowerCase().includes('already submitted') ||
+        detail.toLowerCase().includes('not currently accepting') ||
+        detail.toLowerCase().includes('opens on');
+      if (isFatal) {
+        setFatalError(detail);
+      } else {
+        setError(detail);
+      }
+      // Scroll to the top so user sees the error
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
     } finally {
       setSubmitting(false);
     }
@@ -527,11 +542,33 @@ export default function FeedbackPage() {
                 />
               </Box>
             </Box>
-          </Paper>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>
+          </Paper>          {error && (
+            <Alert ref={errorRef} severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>
               {error}
+            </Alert>
+          )}
+
+          {/* Fatal blocking error — form closed / already submitted */}
+          {fatalError && (
+            <Alert
+              ref={errorRef}
+              severity="error"
+              variant="filled"
+              sx={{ mb: 3, borderRadius: 3, fontSize: '1rem', fontWeight: 600, boxShadow: '0 4px 20px rgba(239,68,68,0.25)' }}
+            >
+              {fatalError}
+              {fatalError.toLowerCase().includes('already submitted') && (
+                <Box sx={{ mt: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => navigate('/forms')}
+                    sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', mt: 0.5 }}
+                  >
+                    Back to Forms
+                  </Button>
+                </Box>
+              )}
             </Alert>
           )}
 
@@ -596,16 +633,14 @@ export default function FeedbackPage() {
               }}
             >
               Back
-            </Button>
-
-            {isLast ? (
+            </Button>            {isLast ? (
               <Button
                 endIcon={submitting ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <SendIcon />}
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || !!fatalError}
                 variant="contained"
                 sx={{
-                  background: submitting ? '#ccc' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  background: (submitting || fatalError) ? '#ccc' : 'linear-gradient(135deg, #22c55e, #16a34a)',
                   color: '#fff', borderRadius: 3, px: 4, py: 1.2, fontWeight: 700,
                   boxShadow: '0 4px 15px rgba(34,197,94,0.4)',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 20px rgba(34,197,94,0.5)' },
