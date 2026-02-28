@@ -55,9 +55,10 @@ class Form(Base):
     # Course Information
     course_name = Column(String(255), nullable=False)
     course_code = Column(String(50), nullable=False)
-      # Relationships
-    instructor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    org_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    
+    # Relationships
+    instructor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    org_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     
     # Status & Timing
@@ -69,6 +70,8 @@ class Form(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
-    # Relationships (will be used later for questions and responses)
-    # questions = relationship("Question", back_populates="form", cascade="all, delete-orphan")
-    # responses = relationship("Response", back_populates="form", cascade="all, delete-orphan")
+    # Relationships with cascade delete
+    instructor = relationship("User", back_populates="forms")
+    org = relationship("Organization", back_populates="forms")
+    questions = relationship("Question", back_populates="form", cascade="all, delete-orphan", passive_deletes=True)
+    responses = relationship("Response", back_populates="form", cascade="all, delete-orphan", passive_deletes=True)

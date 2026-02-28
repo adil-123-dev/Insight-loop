@@ -18,6 +18,7 @@ import LockIcon from '@mui/icons-material/LockRounded';
 import AssignmentIcon from '@mui/icons-material/AssignmentRounded';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import formService from '../services/formService';
+import organizationService from '../services/organizationService';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 
@@ -157,13 +158,23 @@ const FormCard = ({ form, onDelete, onStatusChange, onViewQuestions, onSubmitFee
 };
 
 // ── Create Form Dialog ────────────────────────────────────────────────────────
-const CreateFormDialog = ({ open, onClose, onCreate }) => {
+const CreateFormDialog = ({ open, onClose, onCreate, isAdmin }) => {
   const [data, setData] = useState({
     title: '', description: '', course_name: '', course_code: '',
-    open_date: '', close_date: '',
+    open_date: '', close_date: '', org_id: '',
   });
+  const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Load org list for admin dropdown
+  useEffect(() => {
+    if (open && isAdmin) {
+      organizationService.getOrganizations()
+        .then(setOrgs)
+        .catch(() => setOrgs([]));
+    }
+  }, [open, isAdmin]);
 
   const handleChange = (e) => setData({ ...data, [e.target.name]: e.target.value });
 
@@ -176,9 +187,10 @@ const CreateFormDialog = ({ open, onClose, onCreate }) => {
         ...data,
         open_date:  data.open_date  ? new Date(data.open_date).toISOString()  : null,
         close_date: data.close_date ? new Date(data.close_date).toISOString() : null,
+        org_id: data.org_id ? Number(data.org_id) : undefined,
       };
       await onCreate(payload);
-      setData({ title: '', description: '', course_name: '', course_code: '', open_date: '', close_date: '' });
+      setData({ title: '', description: '', course_name: '', course_code: '', open_date: '', close_date: '', org_id: '' });
       onClose();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create form.');
@@ -204,6 +216,20 @@ const CreateFormDialog = ({ open, onClose, onCreate }) => {
       <Box component="form" onSubmit={handleSubmit}>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
           {error && <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>}
+
+          {/* Admin-only: pick which organization this form belongs to */}
+          {isAdmin && (
+            <TextField
+              select fullWidth label="Organization *" name="org_id"
+              value={data.org_id} onChange={handleChange} sx={fieldSx}
+              helperText="Leave blank to use your own organization"
+            >
+              <MenuItem value=""><em>My organization (default)</em></MenuItem>
+              {orgs.map(o => (
+                <MenuItem key={o.id} value={o.id}>{o.name}</MenuItem>
+              ))}
+            </TextField>
+          )}
 
           <TextField required fullWidth label="Form Title" name="title"
             value={data.title} onChange={handleChange} sx={fieldSx}
@@ -425,12 +451,12 @@ const FormsPage = () => {
           </Grid>
         )}
 
-      </Box>      {/* Create Dialog */}
-      <CreateFormDialog
+      </Box>      {/* Create Dialog */}      <CreateFormDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onCreate={handleCreate}
-      />      {/* Toast notifications */}
+        isAdmin={user?.role === 'admin'}
+      />{/* Toast notifications */}
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={closeToast} />
 
       {/* Confirm dialog */}

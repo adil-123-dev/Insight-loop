@@ -67,6 +67,6 @@ class Question(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
-    # Relationships (will be used later for responses)
-    # form = relationship("Form", back_populates="questions")
-    # answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
+    # Relationships with cascade delete
+    form = relationship("Form", back_populates="questions")
+    answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan", passive_deletes=True)

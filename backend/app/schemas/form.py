@@ -27,19 +27,11 @@ class FormBase(BaseModel):
 
 class FormCreate(FormBase):
     """
-    Schema for creating a new form
-    
-    Example:
-        {
-            "title": "CS101 Mid-Semester Feedback",
-            "description": "Please share your thoughts",
-            "course_name": "Introduction to Computer Science",
-            "course_code": "CS101",
-            "open_date": "2024-03-01T00:00:00",
-            "close_date": "2024-03-07T23:59:59"
-        }
+    Schema for creating a new form.
+    Admins may supply org_id to create a form for a different organization.
+    Instructors always get their own org_id.
     """
-    pass
+    org_id: Optional[int] = Field(None, description="Target organization (admin only — defaults to own org)")
 
 
 class FormUpdate(BaseModel):

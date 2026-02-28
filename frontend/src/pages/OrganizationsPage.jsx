@@ -179,31 +179,36 @@ export default function OrganizationsPage() {
   const openDelete = (org) => {
     setDeleteTarget(org);
     setDeleteDialogOpen(true);
-  };
-  const handleSave = async () => {
+  };  const handleSave = async () => {
     if (!formData.name.trim())      { setFormError('Organization name is required.'); return; }
     if (!formData.subdomain.trim()) { setFormError('Subdomain is required.'); return; }
     setSaving(true);
     setFormError('');
     try {
       if (editTarget) {
-        // Backend has no PUT /organizations — update locally only
-        const updated = {
-          ...editTarget,
+        // Call real PUT /organizations/{id}
+        const updated = await organizationService.updateOrganization(editTarget.id, {
           name: formData.name,
           subdomain: formData.subdomain,
-          description: formData.description,
-        };
-        setOrgs(prev => prev.map(o => o.id === editTarget.id ? updated : o));
+          description: formData.description || null,
+        });
+        setOrgs(prev => prev.map(o => o.id === editTarget.id ? {
+          ...o,
+          ...updated,
+          color: o.color,
+          member_count: o.member_count,
+          form_count: o.form_count,
+        } : o));
       } else {
         const created = await organizationService.createOrganization({
           name: formData.name,
           subdomain: formData.subdomain,
+          description: formData.description || null,
         });
         const enriched = {
           ...created,
           color: ORG_COLORS[orgs.length % ORG_COLORS.length],
-          description: formData.description || created.subdomain,
+          description: created.description || formData.description || created.subdomain,
           member_count: 0,
           form_count: 0,
         };

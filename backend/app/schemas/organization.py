@@ -5,9 +5,15 @@ from datetime import datetime
 class OrganizationBase(BaseModel):
     name: str
     subdomain: str
+    description: Optional[str] = None
 
 class OrganizationCreate(OrganizationBase):
     pass
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = None
+    subdomain: Optional[str] = None
+    description: Optional[str] = None
 
 class OrganizationResponse(OrganizationBase):
     id: int

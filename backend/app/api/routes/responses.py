@@ -78,8 +78,8 @@ def submit_feedback_response(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Step 2: Check form belongs to same organization
+      # Step 2: Check form belongs to same organization
+    # (Students must be in the same org as the form to submit)
     if form.org_id != current_user.org_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -209,13 +209,14 @@ def list_form_responses(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Step 2: Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Step 2: Check permissions
+    # Admin bypasses org check — they can view responses on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -301,13 +302,14 @@ def get_response_details(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Step 3: Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Step 3: Check permissions
+    # Admin bypasses org check — they can view any response on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -371,13 +373,14 @@ def export_responses_csv(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Step 2: Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Step 2: Check permissions
+    # Admin bypasses org check — they can export responses from cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(

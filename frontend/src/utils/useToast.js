@@ -17,6 +17,7 @@ export const useToast = () => {
   const closeToast = useCallback(() => {
     setToast(t => ({ ...t, open: false }));
   }, []);
-
   return { toast, showToast, closeToast };
 };
+
+export default useToast;

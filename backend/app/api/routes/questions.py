@@ -69,13 +69,14 @@ def add_question_to_form(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Check permissions (user must own form or be admin)
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Check permissions (user must own form or be admin)
+    # Admin bypasses org check entirely — they can manage cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -146,13 +147,14 @@ def list_form_questions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Check organization match
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Check organization match
+    # Admin bypasses org check — they can view questions on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     # Check role-based permissions
     if current_user.role == "student":
@@ -218,13 +220,14 @@ def update_question(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Check permissions
+    # Admin bypasses org check — they can update questions on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -290,13 +293,14 @@ def delete_question(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Check permissions
+    # Admin bypasses org check — they can delete questions on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -387,13 +391,14 @@ def reorder_questions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Form not found"
         )
-    
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+      # Check permissions
+    # Admin bypasses org check — they can reorder questions on cross-org forms
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(

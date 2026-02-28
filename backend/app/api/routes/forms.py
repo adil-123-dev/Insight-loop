@@ -17,6 +17,7 @@ from app.core.database import SessionLocal
 from app.core.dependencies import get_current_user, get_current_instructor
 from app.models.user import User
 from app.models.form import Form, FormStatus
+from app.models.organization import Organization
 from app.schemas.form import FormCreate, FormUpdate, FormResponse, FormStatusUpdate
 
 router = APIRouter(prefix="/forms", tags=["Forms"])
@@ -57,8 +58,19 @@ def create_form(
             "course_code": "CS101",
             "open_date": "2024-03-01T00:00:00",
             "close_date": "2024-03-07T23:59:59"
-        }
-    """
+        }    """
+    # Determine target org_id
+    # Admins can create forms for any org by passing org_id in the body.
+    # Instructors always use their own org.
+    if form_data.org_id and current_user.role == "admin":
+        # Validate the org exists
+        target_org = db.query(Organization).filter(Organization.id == form_data.org_id).first()
+        if not target_org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        target_org_id = form_data.org_id
+    else:
+        target_org_id = current_user.org_id
+
     # Create new form instance
     db_form = Form(
         title=form_data.title,
@@ -66,7 +78,7 @@ def create_form(
         course_name=form_data.course_name,
         course_code=form_data.course_code,
         instructor_id=current_user.id,
-        org_id=current_user.org_id,
+        org_id=target_org_id,
         open_date=form_data.open_date,
         close_date=form_data.close_date,
         status=FormStatus.DRAFT
@@ -99,14 +111,13 @@ def list_forms(
             {"id": 1, "title": "CS101 Feedback", ...},
             {"id": 2, "title": "CS102 Feedback", ...}
         ]
-    """
-    # Base query: all forms in user's organization
+    """    # Base query: all forms in user's organization
     query = db.query(Form).filter(Form.org_id == current_user.org_id)
     
     # Filter based on role
     if current_user.role == "admin":
-        # Admin sees all forms in their org
-        forms = query.all()
+        # Admin sees all forms across ALL orgs (they may manage multiple)
+        forms = db.query(Form).all()
     elif current_user.role == "instructor":
         # Instructor sees only their own forms
         forms = query.filter(Form.instructor_id == current_user.id).all()
@@ -138,8 +149,7 @@ def get_form(
         GET /forms/1
         Headers: Authorization: Bearer <token>
         Returns: {"id": 1, "title": "CS101 Feedback", ...}
-    """
-    # Find form
+    """    # Find form
     form = db.query(Form).filter(Form.id == form_id).first()
     
     if not form:
@@ -148,14 +158,18 @@ def get_form(
             detail="Form not found"
         )
     
-    # Check organization match
+    # Admins can access any form they created, regardless of org
+    if current_user.role == "admin":
+        return form
+
+    # Non-admin: form must belong to same org
     if form.org_id != current_user.org_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this form"
         )
     
-    # Check role-based permissions
+    # Student: only published forms
     if current_user.role == "student":
         if form.status != FormStatus.PUBLISHED:
             raise HTTPException(
@@ -201,8 +215,7 @@ def update_form(
             "title": "Updated Title",
             "close_date": "2024-03-10T23:59:59"
         }
-    """
-    # Find form
+    """    # Find form
     form = db.query(Form).filter(Form.id == form_id).first()
     
     if not form:
@@ -211,12 +224,13 @@ def update_form(
             detail="Form not found"
         )
     
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+    # Admin can update any form (including cross-org forms they created)
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -258,8 +272,7 @@ def delete_form(
         DELETE /forms/1
         Headers: Authorization: Bearer <token>
         Returns: 204 No Content
-    """
-    # Find form
+    """    # Find form
     form = db.query(Form).filter(Form.id == form_id).first()
     
     if not form:
@@ -268,12 +281,13 @@ def delete_form(
             detail="Form not found"
         )
     
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+    # Admin can delete any form (including cross-org forms they created)
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(
@@ -314,8 +328,7 @@ def update_form_status(
         Headers: Authorization: Bearer <token>
         Body: {"status": "published"}
         Returns: {"id": 1, "status": "published", ...}
-    """
-    # Find form
+    """    # Find form
     form = db.query(Form).filter(Form.id == form_id).first()
     
     if not form:
@@ -324,12 +337,13 @@ def update_form_status(
             detail="Form not found"
         )
     
-    # Check permissions
-    if form.org_id != current_user.org_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this form"
-        )
+    # Admin can change status of any form (including cross-org forms they created)
+    if current_user.role != "admin":
+        if form.org_id != current_user.org_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this form"
+            )
     
     if current_user.role == "instructor" and form.instructor_id != current_user.id:
         raise HTTPException(

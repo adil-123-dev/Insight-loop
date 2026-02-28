@@ -29,6 +29,13 @@ const organizationService = {
     const response = await api.post('/organizations/', data);
     return response.data;
   },
+  // ─── UPDATE ORGANIZATION (Admin only) ────────────────────────────────────
+  // Backend: PUT /organizations/{org_id}
+  // Body: { name?, subdomain?, description? }
+  updateOrganization: async (orgId, data) => {
+    const response = await api.put(`/organizations/${orgId}`, data);
+    return response.data;
+  },
 
   // ─── DELETE ORGANIZATION (Admin only) ─────────────────────────────────────
   // Backend: DELETE /organizations/{org_id}
