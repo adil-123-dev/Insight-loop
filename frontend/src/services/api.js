@@ -7,7 +7,9 @@ import axios from 'axios';
 // ══════════════════════════════════════════════════════════════════
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',   // No /api prefix — backend routes include their own prefixes
+  // In production (Railway), VITE_API_URL is set to the deployed backend URL.
+  // Locally it falls back to http://localhost:8000 — no change for local dev.
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },

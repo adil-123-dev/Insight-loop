@@ -5,16 +5,19 @@ from alembic import context
 import sys
 import os
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
 # Add parent directory to sys.path to import app module
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# Override sqlalchemy.url from DATABASE_URL env var (used on Railway)
+db_url = os.environ.get("DATABASE_URL")
+if db_url:
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    config.set_main_option("sqlalchemy.url", db_url)
 
 # Import your Base and models here
 from app.core.database import Base

@@ -52,3 +52,23 @@ htmlcov/
 # Temporary files
 *.tmp
 *.bak
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.cache/
+
+# Dev/test scripts (not needed in production)
+backend/test_*.py
+backend/run_*.bat
+backend/restart_server.bat
+backend/run_server.bat
+backend/test_import.bat
+backend/import_test.txt
+backend/test_output.txt
+backend/test_e2e_output.txt
+backend/test_cross_org_output.txt
+backend/test_aqr_output.txt
+backend/uvicorn_out.txt
+backend/uvicorn_err.txt
